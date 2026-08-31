@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TOU Test Sheet">
 <meta name="theme-color" content="#181c24">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="tou-manifest.json">
 <link rel="apple-touch-icon" href="icon2.png">
 <title>TOU Test Sheet</title>
 <style>
@@ -521,10 +521,138 @@
     tr { page-break-inside: avoid; }
   }
 
+  /* ── TABLET (≤1024px) ─────────────────────────────── */
+  @media (max-width: 1024px) {
+    .header-info { flex-wrap: wrap; gap: 10px; }
+    .header-field input { width: 120px; }
+    main { padding: 20px 16px; }
+  }
+
+  /* ── MOBILE & SMALL TABLET (≤700px) ──────────────── */
   @media (max-width: 700px) {
-    .sign-grid { grid-template-columns: 1fr; }
-    .photo-grid { grid-template-columns: 1fr 1fr; }
-    .header-info { flex-wrap: wrap; gap: 12px; }
+
+    /* Header - collapse to stacked layout */
+    header {
+      flex-direction: column;
+      padding: 0;
+      position: relative;
+    }
+    .header-brand {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+      justify-content: flex-start;
+    }
+    .header-brand img { height: 40px; }
+    .header-info {
+      flex-direction: column;
+      gap: 0;
+      padding: 0;
+      width: 100%;
+    }
+    .header-field {
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-bottom: 1px solid rgba(42,48,64,0.4);
+    }
+    .header-field label {
+      min-width: 90px;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+    }
+    .header-field input {
+      width: 100%;
+      font-size: 13px;
+    }
+    .header-actions {
+      margin: 0;
+      padding: 10px 14px;
+      flex-wrap: wrap;
+      gap: 6px;
+      border-top: 1px solid var(--border);
+      justify-content: flex-start;
+    }
+    #save-status { width: 100%; margin-bottom: 4px; }
+    .btn { font-size: 11px; padding: 6px 10px; }
+
+    /* Nav - horizontal scroll, shorter labels */
+    nav { padding: 0 10px; }
+    .tab-btn { font-size: 10px; padding: 10px 10px; letter-spacing: 1px; }
+    .tab-btn .sec-num { display: none; }
+
+    /* Main content */
+    main { padding: 14px 12px; }
+
+    /* Section header */
+    .section-header { margin-bottom: 14px; gap: 8px; }
+    .section-title { font-size: 18px; }
+
+    /* Tables - card layout on mobile */
+    /* Hide standard table headers on mobile */
+    .mobile-card-table thead { display: none; }
+    .mobile-card-table tbody tr {
+      display: block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      padding: 10px 12px;
+    }
+    .mobile-card-table tbody td {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 4px 0;
+      border-bottom: none;
+      font-size: 13px;
+    }
+    .mobile-card-table tbody td::before {
+      content: attr(data-label);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      min-width: 90px;
+      flex-shrink: 0;
+      padding-top: 5px;
+    }
+    .mobile-card-table tbody td:empty { display: none; }
+    .mobile-card-table tbody td input,
+    .mobile-card-table tbody td textarea { font-size: 13px; }
+
+    /* Equipment detail tables stay as-is but full width */
+    .card table:not(.mobile-card-table) td:first-child {
+      min-width: 140px;
+      font-size: 12px;
+    }
+
+    /* Signature and photos */
+    .sign-grid { grid-template-columns: 1fr; gap: 12px; }
+    .photo-grid { grid-template-columns: 1fr; gap: 12px; }
+
+    /* Cards */
+    .card { margin-bottom: 14px; }
+    .card-header { font-size: 11px; padding: 8px 12px; }
+
+    /* Info box */
+    .info-box { font-size: 12px; }
+
+    /* Modal */
+    .modal { padding: 18px; width: 95%; }
+
+    /* File warning */
+    #file-warning { width: 95%; }
+  }
+
+  /* ── PHONE (≤400px) ──────────────────────────────── */
+  @media (max-width: 400px) {
+    .tab-btn { font-size: 9px; padding: 9px 7px; }
+    .section-title { font-size: 16px; }
+    .btn { font-size: 10px; padding: 5px 8px; }
   }
 </style>
 </head>
@@ -610,7 +738,7 @@
   </div>
   <div class="card">
     <div class="card-header">Installation Checklist</div>
-    <table>
+    <table class="mobile-card-table" id="tbl-install">
       <thead><tr>
         <th style="width:40px">Item</th>
         <th>Description</th>
@@ -644,7 +772,7 @@
   </div>
   <div class="card">
     <div class="card-header">Torque Measurements</div>
-    <table>
+    <table class="mobile-card-table">
       <thead><tr>
         <th style="width:40px">Item</th>
         <th>Connection Type</th>
@@ -670,7 +798,7 @@
   </div>
   <div class="card">
     <div class="card-header">Labelling Checklist</div>
-    <table>
+    <table class="mobile-card-table">
       <thead><tr>
         <th style="width:40px">Item</th>
         <th>Description</th>
@@ -704,7 +832,7 @@
   </div>
   <div class="card">
     <div class="card-header">Test Results</div>
-    <table>
+    <table class="mobile-card-table">
       <thead><tr>
         <th>Test Between</th>
         <th style="width:120px">Result (MΩ)</th>
@@ -739,7 +867,7 @@
   </div>
   <div class="card">
     <div class="card-header">Test Results</div>
-    <table>
+    <table class="mobile-card-table">
       <thead><tr>
         <th>Test Between</th>
         <th style="width:140px">Result (mA)</th>
@@ -763,7 +891,7 @@
   </div>
   <div class="card">
     <div class="card-header">Test Parameters</div>
-    <table>
+    <table class="mobile-card-table">
       <thead><tr>
         <th>Parameter</th>
         <th style="width:180px">Value</th>
@@ -786,7 +914,7 @@
   </div>
   <div class="card">
     <div class="card-header">Final Checks</div>
-    <table>
+    <table class="mobile-card-table">
       <thead><tr>
         <th>Item</th>
         <th style="width:100px;text-align:center">Check (✓/✗)</th>
@@ -1503,6 +1631,20 @@ function restoreSignature(dataUrl) {
   img.src = dataUrl;
 }
 
+// ── MOBILE CARD LABELS ────────────────────────────────────────
+// Reads th text from each mobile-card-table and applies as data-label
+// on each td so the CSS ::before pseudo-element can show column names
+function applyMobileLabels() {
+  document.querySelectorAll('table.mobile-card-table').forEach(table => {
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+    table.querySelectorAll('tbody tr').forEach(tr => {
+      Array.from(tr.querySelectorAll('td')).forEach((td, i) => {
+        td.setAttribute('data-label', headers[i] || '');
+      });
+    });
+  });
+}
+
 // ── RENDER ALL ────────────────────────────────────────────────
 function renderAll() {
   renderInstall();
@@ -1513,6 +1655,7 @@ function renderAll() {
   renderPI();
   renderFinal();
   renderPhotos();
+  applyMobileLabels();
 }
 
 // ── INIT ──────────────────────────────────────────────────────
@@ -1538,15 +1681,6 @@ function init() {
 }
 
 init();
-
-// Register service worker for PWA / offline support
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => {
-      console.log('Service worker registration failed:', err);
-    });
-  });
-}
 </script>
 </body>
 </html>
