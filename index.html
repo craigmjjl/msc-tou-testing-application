@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TOU Test Sheet">
 <meta name="theme-color" content="#181c24">
-<link rel="manifest" href="tou-manifest.json">
+<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon2.png">
 <title>TOU Test Sheet</title>
 <style>
@@ -53,14 +53,18 @@
     top: 0;
     z-index: 100;
   }
+  
+  .header-brand img { border: none; }
+  
   .header-brand {
     display: flex;
     align-items: center;
-    padding: 10px 20px 10px 0;
+    padding: 6px 20px 6px 0;
     border-right: 1px solid var(--border);
     gap: 10px;
+    overflow: hidden;
   }
-  .header-brand img { height: 50px; }
+  .header-brand img { height: 80px; width: auto; object-fit: contain; }
   .header-info {
     display: flex;
     align-items: center;
@@ -1681,6 +1685,15 @@ function init() {
 }
 
 init();
+
+// Register service worker for PWA / offline support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.log('Service worker registration failed:', err);
+    });
+  });
+}
 </script>
 </body>
 </html>
