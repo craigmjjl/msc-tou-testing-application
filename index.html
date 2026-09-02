@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TOU Test Sheet">
 <meta name="theme-color" content="#181c24">
-<link rel="manifest" href="tou-manifest.json">
+<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon2.png">
 <title>TOU Test Sheet</title>
 <style>
@@ -517,7 +517,6 @@
     .sig-wrap { border: 1px solid #ccc; background: white !important; }
     .sig-canvas { height: 80px; background: white !important; display: block !important; }
     .sign-block { background: white !important; border: 1px solid #ddd; }
-    /* Force the card containing the signature to white */
     #panel-7 .card, #panel-7 .card > div { background: white !important; color: #111 !important; }
     .photo-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
     .photo-card { break-inside: avoid; border: 1px solid #ccc; border-radius: 0; }
@@ -1035,6 +1034,17 @@
 
 <script>
 const STORE_KEY = 'msc_tou_v1';
+
+// Safe localStorage wrapper - silently handles quota exceeded errors
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch(e) {
+    console.warn('localStorage write failed (quota exceeded):', e);
+    return false;
+  }
+}
 const MAX_PHOTOS = 12;
 let openedFileName = null; // tracks if user opened a file
 let savedFileHandle = null; // retains file handle after Save As for subsequent saves
@@ -1116,7 +1126,7 @@ async function autoSave() {
   collectFormValues();
   collectSignature();
   const json = JSON.stringify(state, null, 2);
-  localStorage.setItem(STORE_KEY, json);
+  safeSetItem(STORE_KEY, json);
   if (savedFileHandle) {
     try {
       await writeToHandle(savedFileHandle, json);
@@ -1135,7 +1145,7 @@ async function manualSave() {
   collectFormValues();
   collectSignature();
   const json = JSON.stringify(state, null, 2);
-  localStorage.setItem(STORE_KEY, json);
+  safeSetItem(STORE_KEY, json);
   if (savedFileHandle) {
     try {
       await writeToHandle(savedFileHandle, json);
@@ -1232,7 +1242,7 @@ async function doSave() {
       await writeToHandle(handle, json);
       savedFileHandle = handle;     // retain handle for future saves
       openedFileName = filename;    // update tracking so Save button knows a file is active
-      localStorage.setItem(STORE_KEY, json);
+      safeSetItem(STORE_KEY, json);
       updateSaveStatus(true);
       showToast('Saved ✓');
     } catch(err) {
@@ -1247,7 +1257,7 @@ async function doSave() {
     a.href = URL.createObjectURL(blob);
     a.download = filename;
     a.click();
-    localStorage.setItem(STORE_KEY, json);
+    safeSetItem(STORE_KEY, json);
     updateSaveStatus(true);
     showToast('Saved ✓');
   }
@@ -1262,14 +1272,26 @@ function importData(event) {
   reader.onload = (e) => {
     try {
       const parsed = JSON.parse(e.target.result);
-      // Merge parsed over defaults — parsed must win so photos/arrays are preserved
+      // Parsed data must win — assign over defaults
       state = Object.assign(buildDefaultState(), parsed);
-      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      // Try to save to localStorage — may fail if file is large (quota exceeded)
+      try {
+        safeSetItem(STORE_KEY, JSON.stringify(state));
+      } catch(storageErr) {
+        // Quota exceeded — state is still in memory, app works but won't survive refresh
+        console.warn('localStorage quota exceeded — file too large to cache locally');
+        showToast('Loaded ✓ (file too large to auto-cache)', 'var(--warning)');
+        renderAll();
+        restoreFormValues();
+        updateSaveStatus(false);
+        return;
+      }
       renderAll();
       restoreFormValues();
       updateSaveStatus(true);
       showToast('Loaded ✓');
     } catch(err) {
+      console.error('Import error:', err);
       showToast('Could not read file', 'var(--danger)');
     }
   };
@@ -1284,7 +1306,7 @@ function doReset() {
   state = buildDefaultState();
   openedFileName = null;
   savedFileHandle = null;
-  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  safeSetItem(STORE_KEY, JSON.stringify(state));
   closeResetModal();
   clearSig();
   // Clear all header, sign, equipment inputs visually
@@ -1541,7 +1563,13 @@ function renderPhotos() {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (ev) => { state.photos[i].src = ev.target.result; renderPhotos(); updateSaveStatus(false); };
+        reader.onload = (ev) => {
+          compressImage(ev.target.result, 1200, 0.70, (compressed) => {
+            state.photos[i].src = compressed;
+            renderPhotos();
+            updateSaveStatus(false);
+          });
+        };
         reader.readAsDataURL(file);
       };
       wrap.appendChild(fi);
@@ -1560,6 +1588,29 @@ function renderPhotos() {
     card.appendChild(info);
     grid.appendChild(card);
   });
+}
+
+// ── IMAGE COMPRESSION ─────────────────────────────────────────
+// Resizes to maxWidth and compresses to quality (0-1) before storing.
+// Keeps file sizes small enough for localStorage on iPad Safari.
+function compressImage(dataUrl, maxWidth, quality, callback) {
+  const img = new Image();
+  img.onload = () => {
+    let w = img.width;
+    let h = img.height;
+    // Scale down if wider than maxWidth, maintain aspect ratio
+    if (w > maxWidth) {
+      h = Math.round(h * maxWidth / w);
+      w = maxWidth;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    callback(canvas.toDataURL('image/jpeg', quality));
+  };
+  img.src = dataUrl;
 }
 
 function addPhoto() {
