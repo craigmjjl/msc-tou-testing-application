@@ -1205,6 +1205,7 @@ function restoreFormValues() {
   const nf = document.getElementById('notes-field');
   if (nf && state.notes) nf.value = state.notes;
   if (state.sigData) restoreSignature(state.sigData);
+  updatePageTitle();
 }
 
 // ── SAVE AS DIALOG ────────────────────────────────────────────
@@ -1718,6 +1719,16 @@ function renderAll() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────
+function updatePageTitle() {
+  const proj = (document.getElementById('hdr-projno')?.value || '').trim().replace(/\s+/g,'_');
+  const serial = (document.getElementById('hdr-serial')?.value || '').trim().replace(/\s+/g,'_');
+  let title = 'TOU Test Sheet';
+  if (proj && serial) title = `${proj}_${serial}`;
+  else if (proj) title = proj;
+  else if (serial) title = serial;
+  document.title = title;
+}
+
 function init() {
   renderAll();
   restoreFormValues();
@@ -1735,6 +1746,13 @@ function init() {
   // Mark unsaved on any input
   document.addEventListener('input', () => updateSaveStatus(false));
   document.addEventListener('change', () => updateSaveStatus(false));
+
+  // Update page title live as project/serial fields are typed
+  document.getElementById('hdr-projno').addEventListener('input', updatePageTitle);
+  document.getElementById('hdr-serial').addEventListener('input', updatePageTitle);
+
+  // Set title on load if values already exist
+  updatePageTitle();
 
   if (localStorage.getItem(STORE_KEY)) updateSaveStatus(true);
 }
