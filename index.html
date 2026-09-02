@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TOU Test Sheet">
 <meta name="theme-color" content="#181c24">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="tou-manifest.json">
 <link rel="apple-touch-icon" href="icon2.png">
 <title>TOU Test Sheet</title>
 <style>
@@ -59,12 +59,12 @@
   .header-brand {
     display: flex;
     align-items: center;
-    padding: 6px 20px 6px 0;
+    padding: 10px 20px 10px 0;
     border-right: 1px solid var(--border);
     gap: 10px;
-    overflow: hidden;
+	overflow: hidden;
   }
-  .header-brand img { height: 80px; width: auto; object-fit: contain; }
+  .header-brand img { height: 100%; max-height: 58px; width: auto; object-fit: contain; }
   .header-info {
     display: flex;
     align-items: center;
@@ -514,8 +514,11 @@
     .sign-block { background: #f9f9f9; border: 1px solid #ddd; padding: 10px 12px; }
     .sign-block label { color: #888; font-size: 9px; }
     .sign-row { font-size: 11px; color: #555; margin-bottom: 4px; }
-    .sig-wrap { border: 1px solid #ccc; background: white; }
-    .sig-canvas { height: 80px; }
+    .sig-wrap { border: 1px solid #ccc; background: white !important; }
+    .sig-canvas { height: 80px; background: white !important; display: block !important; }
+    .sign-block { background: white !important; border: 1px solid #ddd; }
+    /* Force the card containing the signature to white */
+    #panel-7 .card, #panel-7 .card > div { background: white !important; color: #111 !important; }
     .photo-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
     .photo-card { break-inside: avoid; border: 1px solid #ccc; border-radius: 0; }
     .photo-thumb-wrap { aspect-ratio: 4/3; background: #f0f0f0 !important; }
@@ -1259,6 +1262,7 @@ function importData(event) {
   reader.onload = (e) => {
     try {
       const parsed = JSON.parse(e.target.result);
+      // Merge parsed over defaults — parsed must win so photos/arrays are preserved
       state = Object.assign(buildDefaultState(), parsed);
       localStorage.setItem(STORE_KEY, JSON.stringify(state));
       renderAll();
@@ -1685,15 +1689,6 @@ function init() {
 }
 
 init();
-
-// Register service worker for PWA / offline support
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => {
-      console.log('Service worker registration failed:', err);
-    });
-  });
-}
 </script>
 </body>
 </html>
