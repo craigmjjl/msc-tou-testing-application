@@ -3,7 +3,7 @@
   "short_name": "TOU Test",
   "description": "Tap-Off Unit MCCB Test Sheet — Manor Switchgear & Controls Ltd",
   "start_url": "./index.html",
-  "display": "standalone",
+  "display": "browser",
   "background_color": "#074368",
   "theme_color": "#181c24",
   "orientation": "any",
