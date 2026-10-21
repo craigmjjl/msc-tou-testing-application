@@ -1331,6 +1331,12 @@ function doReset() {
 
 // ── PRINT / PDF ───────────────────────────────────────────────
 function printPDF() {
+	  const isStandalone = (window.navigator.standalone === true) ||
+                       (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if (isStandalone) {
+    showToast("Printing isn’t available from the home-screen app — open this sheet in Safari to print or save as PDF.", "var(--warning)");
+    return;
+  }
   collectFormValues();
   collectSignature();
   const fmt = (v, fb) => v && v.trim() ? v.trim() : fb;
