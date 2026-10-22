@@ -1334,7 +1334,11 @@ function printPDF() {
 	  const isStandalone = (window.navigator.standalone === true) ||
                        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   if (isStandalone) {
-    showToast("Printing isn’t available from the home-screen app — open this sheet in Safari to print or save as PDF.", "var(--warning)");
+    // iOS 26/27 forces home-screen apps into standalone, where window.print()
+    // does nothing. Save the sheet, then hand off to Safari (which can print),
+    // with a flag that auto-triggers printing once it loads there.
+    try { collectFormValues(); collectSignature(); safeSetItem(STORE_KEY, JSON.stringify(state)); } catch(e){}
+    window.open(location.origin + location.pathname + '?print=1', '_blank');
     return;
   }
   collectFormValues();
@@ -1776,7 +1780,7 @@ function init() {
 init();
 // Visible build + mode badge — confirms updates landed and shows the launch mode
 (function(){
-  var APP_VERSION = 'v5';
+  var APP_VERSION = 'v6';
   var standalone = (window.navigator.standalone === true) ||
                    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   var b = document.createElement('div');
@@ -1786,6 +1790,14 @@ init();
                     'color:#9fb3c8;background:rgba(7,67,104,0.78);padding:3px 6px;' +
                     'border-radius:4px;pointer-events:none;opacity:0.7';
   document.body.appendChild(b);
+})();
+	// If Safari was opened from the standalone app to print, fire it automatically.
+(function(){
+  if (location.search.indexOf('print=1') === -1) return;
+  var standalone = (window.navigator.standalone === true) ||
+                   (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if (standalone) return;               // only run in the Safari/browser context
+  setTimeout(function(){ try { printPDF(); } catch(e){} }, 800);
 })();
 	
 // Register service worker for PWA / offline support
