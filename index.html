@@ -1774,7 +1774,20 @@ function init() {
 }
 
 init();
-
+// Visible build + mode badge — confirms updates landed and shows the launch mode
+(function(){
+  var APP_VERSION = 'v5';
+  var standalone = (window.navigator.standalone === true) ||
+                   (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  var b = document.createElement('div');
+  b.id = 'build-badge';
+  b.textContent = APP_VERSION + ' · ' + (standalone ? 'standalone' : 'browser');
+  b.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:9999;font:10px/1 monospace;' +
+                    'color:#9fb3c8;background:rgba(7,67,104,0.78);padding:3px 6px;' +
+                    'border-radius:4px;pointer-events:none;opacity:0.7';
+  document.body.appendChild(b);
+})();
+	
 // Register service worker for PWA / offline support
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
