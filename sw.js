@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tou-test-v4';
+const CACHE_NAME = 'tou-test-v5';
 const FILES_TO_CACHE = [
   './',
   './index.html',
@@ -7,7 +7,7 @@ const FILES_TO_CACHE = [
   './icon2.png'
 ];
 
-// Install — cache all core files immediately and force activation
+// Install — cache core files, activate immediately
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -16,51 +16,53 @@ self.addEventListener('install', event => {
   );
 });
 
-// Activate — take control immediately and clear old caches
+// Activate — take control and purge old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      ))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
 
-// Fetch — cache first, fall back to network, update cache in background
 self.addEventListener('fetch', event => {
-  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
-      if (cachedResponse) {
-        // Serve from cache immediately, update in background
-        const fetchPromise = fetch(event.request)
-          .then(networkResponse => {
-            if (networkResponse && networkResponse.status === 200) {
-              const responseClone = networkResponse.clone();
-              caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
-            }
-            return networkResponse;
-          })
-          .catch(() => cachedResponse); // If network fails, cached copy is fine
-        return cachedResponse; // Return cached immediately
-      }
+  const url = new URL(event.request.url);
+  const isPage = event.request.mode === 'navigate' ||
+                 url.pathname.endsWith('/') ||
+                 url.pathname.endsWith('index.html') ||
+                 url.pathname.endsWith('manifest.json');
 
-      // Not in cache — try network and cache the result
-      return fetch(event.request)
-        .then(networkResponse => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+  if (isPage) {
+    // NETWORK-FIRST for the page & manifest: always load the newest version
+    // when online, fall back to cache only when offline. THIS is what lets
+    // updates (like the browser-mode settings) actually reach the device.
+    event.respondWith(
+      fetch(event.request)
+        .then(res => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
           }
-          return networkResponse;
+          return res;
         })
-        .catch(() => {
-          // Network failed and nothing in cache
-          return caches.match('./index.html');
-        });
+        .catch(() => caches.match(event.request).then(r => r || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // CACHE-FIRST for static assets (icons, fonts): fast and offline-friendly.
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+      return fetch(event.request).then(res => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
+        }
+        return res;
+      }).catch(() => cached);
     })
   );
 });
